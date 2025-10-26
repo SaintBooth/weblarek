@@ -5,7 +5,7 @@ import { EventEmitter } from './components/base/Events';
 import { Products } from './components/Models/Products';
 import { Basket } from './components/Models/Basket';
 import { Buyer } from './components/Models/Buyer';
-import { Page, Modal, CatalogCard, PreviewCard, BasketCard, Basket as BasketView, OrderForm, ContactsForm, Success } from './components/View';
+import { Page, HeaderBasket, Modal, CatalogCard, PreviewCard, BasketCard, BasketView, OrderForm, ContactsForm, Success } from './components/View/index';
 import { cloneTemplate, ensureElement } from './utils/utils';
 import { IOrder, IProduct } from './types';
 import { Api } from './components/base/Api';
@@ -39,6 +39,7 @@ const successTemplate = ensureElement<HTMLTemplateElement>('#success');
 // Компоненты представления
 // ========================================
 const page = new Page(document.body, events);
+const headerBasket = new HeaderBasket(document.body, events);
 const modal = new Modal(ensureElement<HTMLElement>('#modal-container'), events);
 const basketView = new BasketView(cloneTemplate(basketTemplate), events);
 const orderForm = new OrderForm(cloneTemplate(orderTemplate), events);
@@ -83,17 +84,8 @@ events.on('preview:changed', (item: IProduct) => {
         })
     });
 
-    // Обновляем текст кнопки и состояние в зависимости от того, есть ли товар в корзине
-    const button = card.render().querySelector('.card__button') as HTMLButtonElement;
-    if (button) {
-        if (inBasket) {
-            button.textContent = 'Уже в корзине';
-            button.disabled = true;
-        } else if (item.price === null) {
-            button.textContent = 'Не продается';
-            button.disabled = true;
-        }
-    }
+    // Устанавливаем состояние кнопки через метод представления
+    card.setButtonState(inBasket, item.price);
 });
 
 /**
@@ -102,7 +94,7 @@ events.on('preview:changed', (item: IProduct) => {
  */
 events.on('basket:changed', () => {
     // Обновляем счетчик товаров в шапке
-    page.counter = basketModel.getTotalItems();
+    headerBasket.counter = basketModel.getTotalItems();
 
     // Обновляем список товаров в корзине
     basketView.items = basketModel.getItems().map((item, index) => {
@@ -243,10 +235,15 @@ events.on('form:submit', () => {
 
 /**
  * Обработка изменения полей ввода в формах
- * Сохраняет данные в модель покупателя
+ * Сохраняет данные в модель покупателя и обновляет представление
  */
 events.on('input:change', (data: { field: string, value: string }) => {
     buyerModel.setData({ [data.field]: data.value });
+
+    // Обновляем визуальное состояние кнопок выбора способа оплаты
+    if (data.field === 'payment') {
+        orderForm.setPaymentMethod(data.value as 'card' | 'cash');
+    }
 });
 
 /**
