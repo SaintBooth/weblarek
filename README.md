@@ -220,3 +220,136 @@ interface IBuyer {
 
 - `getProducts(): Promise<IProduct[]>` - выполняет GET-запрос на эндпоинт `/product` для получения списка всех товаров. Возвращает промис, который разрешается массивом товаров.
 - `createOrder(order: IOrder): Promise<IOrderResult>` - выполняет POST-запрос на эндпоинт `/order` для оформления заказа. Принимает объект с данными заказа и возвращает промис с результатом.
+
+## Классы представления (View)
+
+Подробная документация по всем классам представления, событиям и Презентеру находится в файле [VIEW_DOC.md](./VIEW_DOC.md).
+
+В этом файле описаны:
+
+- Все классы компонентов интерфейса (Page, Modal, Card, Basket, Form и др.)
+- Полный список всех событий приложения с описанием
+- Архитектура и реализация слоя Презентера
+- Сценарии работы приложения
+
+## Типы данных
+
+Все интерфейсы и типы данных находятся в файле `src/types/index.ts`. Основные типы:
+
+### Типы для API
+
+```typescript
+type ApiPostMethods = "POST" | "PUT" | "DELETE";
+
+interface IApi {
+  get<T extends object>(uri: string): Promise<T>;
+  post<T extends object>(
+    uri: string,
+    data: object,
+    method?: ApiPostMethods
+  ): Promise<T>;
+}
+```
+
+### Типы для товаров
+
+```typescript
+interface IProduct {
+  id: string;
+  description: string;
+  image: string;
+  title: string;
+  category: string;
+  price: number | null;
+}
+
+interface ICard extends IProduct {
+  index?: number;
+}
+```
+
+### Типы для покупателя и заказа
+
+```typescript
+type TPayment = "card" | "cash";
+
+interface IBuyer {
+  payment: TPayment | null;
+  email: string;
+  phone: string;
+  address: string;
+}
+
+interface IOrder extends IBuyer {
+  total: number;
+  items: string[];
+}
+
+interface IOrderResult {
+  id: string;
+  total: number;
+}
+```
+
+### Типы для представлений
+
+```typescript
+interface IPage {
+  counter: number;
+  gallery: HTMLElement[];
+  locked: boolean;
+}
+
+interface IModalData {
+  content: HTMLElement;
+}
+
+interface IBasketView {
+  items: HTMLElement[];
+  total: number;
+}
+
+interface ISuccess {
+  total: number;
+}
+
+interface IFormState {
+  valid: boolean;
+  errors: string[];
+}
+
+interface IOrderForm {
+  payment: TPayment;
+  address: string;
+  email: string;
+  phone: string;
+}
+```
+
+## Ключевые особенности реализации
+
+### Событийно-ориентированная архитектура
+
+Приложение построено на событийной модели:
+
+- Модели данных генерируют события при изменении данных
+- Представления генерируют события при действиях пользователя
+- Презентер обрабатывает события и связывает модели с представлениями
+
+### Паттерн MVP
+
+- **Model** - хранит данные и бизнес-логику (Products, Basket, Buyer)
+- **View** - отвечает за отображение данных (Page, Modal, Card, Form и др.)
+- **Presenter** - связывает модели и представления через события (реализован в main.ts)
+
+### Слабая связанность
+
+Компоненты не знают друг о друге напрямую, взаимодействие происходит только через события, что обеспечивает:
+
+- Легкую тестируемость
+- Простоту поддержки
+- Возможность замены компонентов
+
+### Реактивность
+
+При изменении данных в моделях автоматически генерируются события, которые вызывают обновление соответствующих представлений.
